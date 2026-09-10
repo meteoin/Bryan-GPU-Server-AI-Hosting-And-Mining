@@ -44,12 +44,15 @@ BUSY_COUNT_KEYS = (
     "num_instances",
     "rented_gpus",
     "num_active_rentals",
-    "current_rentals_on_demand",
-    "current_rentals_reserved",
-    "current_rentals_resident",
     "current_rentals_running",
     "current_rentals_running_on_demand",
     "current_rentals_running_reserved",
+)
+
+AMBIGUOUS_COUNT_KEYS = (
+    "current_rentals_on_demand",
+    "current_rentals_reserved",
+    "current_rentals_resident",
 )
 
 BUSY_TEXT_KEYS = (
@@ -149,6 +152,29 @@ def load_machine(machine_id: int) -> dict[str, Any]:
     return machine
 
 
+def normalize_instance_list(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, dict)]
+    if isinstance(payload, dict):
+        if isinstance(payload.get("instances"), list):
+            return [item for item in payload["instances"] if isinstance(item, dict)]
+        if "id" in payload:
+            return [payload]
+    return []
+
+
+def load_instances(machine_id: int) -> list[dict[str, Any]]:
+    payload = run_vastai_json(["show", "instances"])
+    instances: list[dict[str, Any]] = []
+    for instance in normalize_instance_list(payload):
+        try:
+            if int(instance.get("machine_id")) == machine_id:
+                instances.append(instance)
+        except (TypeError, ValueError):
+            continue
+    return instances
+
+
 def occupancy_idle(value: Any) -> bool | None:
     if value is None:
         return None
@@ -161,7 +187,23 @@ def occupancy_idle(value: Any) -> bool | None:
     return all(char == "x" for char in alnum)
 
 
-def detect_machine_state(machine: dict[str, Any]) -> DetectResult:
+def instance_counts_as_active(instance: dict[str, Any]) -> bool:
+    cur_state = str(instance.get("cur_state", "")).strip().lower()
+    actual_status = str(instance.get("actual_status", "")).strip().lower()
+    intended_status = str(instance.get("intended_status", "")).strip().lower()
+    released_states = {"unloaded", "destroyed"}
+    inactive_statuses = {"stopped", "exited"}
+
+    if cur_state and cur_state not in released_states:
+        return True
+    if actual_status and actual_status not in inactive_statuses:
+        return True
+    if intended_status and intended_status not in inactive_statuses:
+        return True
+    return False
+
+
+def detect_machine_state(machine: dict[str, Any], instances: list[dict[str, Any]]) -> DetectResult:
     reasons: list[str] = []
 
     for key in BUSY_BOOL_KEYS:
@@ -179,6 +221,38 @@ def detect_machine_state(machine: dict[str, Any]) -> DetectResult:
         except (TypeError, ValueError):
             continue
 
+    occup = machine.get("occup")
+    if occup is None:
+        occup = machine.get("gpu_occupancy")
+    occup_idle = occupancy_idle(occup)
+    if occup_idle is False:
+        reasons.append(f"occup={occup}")
+        return DetectResult("busy", reasons)
+
+    active_instances: list[str] = []
+    for instance in instances:
+        if instance_counts_as_active(instance):
+            active_instances.append(
+                "instance_id={id} cur_state={cur_state} actual_status={actual_status} intended_status={intended_status}".format(
+                    id=instance.get("id"),
+                    cur_state=instance.get("cur_state"),
+                    actual_status=instance.get("actual_status"),
+                    intended_status=instance.get("intended_status"),
+                )
+            )
+    if active_instances:
+        return DetectResult("busy", active_instances)
+
+    for key in AMBIGUOUS_COUNT_KEYS:
+        value = machine.get(key)
+        try:
+            if value is not None and float(value) > 0:
+                reasons.append(f"{key}={value}")
+        except (TypeError, ValueError):
+            continue
+    if reasons:
+        return DetectResult("unknown", reasons)
+
     for key in BUSY_TEXT_KEYS:
         value = machine.get(key)
         if value is None:
@@ -191,16 +265,9 @@ def detect_machine_state(machine: dict[str, Any]) -> DetectResult:
             reasons.append(f"{key}={value}")
             return DetectResult("idle", reasons)
 
-    occup = machine.get("occup")
-    if occup is None:
-        occup = machine.get("gpu_occupancy")
-    occup_idle = occupancy_idle(occup)
     if occup_idle is True:
         reasons.append(f"occup={occup}")
         return DetectResult("idle", reasons)
-    if occup_idle is False:
-        reasons.append(f"occup={occup}")
-        return DetectResult("busy", reasons)
 
     return DetectResult("unknown", ["no reliable idle/busy signal found"])
 
@@ -554,7 +621,8 @@ def main(argv: list[str]) -> int:
                 break
             try:
                 machine = load_machine(args.machine_id)
-                detect = detect_machine_state(machine)
+                instances = load_instances(args.machine_id)
+                detect = detect_machine_state(machine, instances)
                 state = update_observation_state(state, detect.state, detect.reasons, machine)
                 desired_action, action_reason = desired_action_for_observation(args, state)
                 log(
