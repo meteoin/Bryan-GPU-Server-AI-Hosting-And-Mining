@@ -1,0 +1,20 @@
+[Unit]
+Description=Vast idle PRL host miner watcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=flyanb
+WorkingDirectory=/home/flyanb
+Environment=HOME=/home/flyanb
+Environment=PATH=/home/flyanb/.local/bin:/usr/local/bin:/usr/bin:/bin
+EnvironmentFile=/home/flyanb/.config/vast-prl-host-miner.env
+ExecStart=/home/flyanb/vast_prl_host_miner_launcher.sh
+Restart=always
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
