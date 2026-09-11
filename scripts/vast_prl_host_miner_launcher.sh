@@ -6,12 +6,16 @@ export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
 PYTHON_BIN="${PYTHON_BIN:-/usr/bin/python3}"
 WATCHER_SCRIPT="${WATCHER_SCRIPT:-$SCRIPT_DIR/vast_idle_host_miner.py}"
+GPU_TUNING_HELPER="${GPU_TUNING_HELPER:-$SCRIPT_DIR/gpu_tuning_helper.py}"
 MINER_BIN="${MINER_BIN:-$HOME/srbminer/SRBMiner-MULTI}"
 MACHINE_ID="${MACHINE_ID:-}"
 PRL_WALLET="${PRL_WALLET:-}"
 WORKER_NAME="${WORKER_NAME:-$(hostname -s)}"
 POOL="${POOL:-pearl-us-west.luckypool.io:3360}"
 POOL_PASSWORD="${POOL_PASSWORD:-x}"
+GPU_POWER_LIMIT="${GPU_POWER_LIMIT:-}"
+GPU_MEMORY_CLOCK="${GPU_MEMORY_CLOCK:-}"
+GPU_CORE_CLOCK="${GPU_CORE_CLOCK:-}"
 POLL_SECONDS="${POLL_SECONDS:-5}"
 MIN_IDLE_POLLS="${MIN_IDLE_POLLS:-2}"
 MIN_BUSY_POLLS="${MIN_BUSY_POLLS:-1}"
@@ -30,6 +34,16 @@ fail() {
 [[ -x "$PYTHON_BIN" ]] || fail "python binary not executable: $PYTHON_BIN"
 [[ -f "$WATCHER_SCRIPT" ]] || fail "watcher script not found: $WATCHER_SCRIPT"
 [[ -x "$MINER_BIN" ]] || fail "miner binary not executable: $MINER_BIN"
+
+if [[ -f "$GPU_TUNING_HELPER" ]] && [[ -n "$GPU_POWER_LIMIT$GPU_MEMORY_CLOCK$GPU_CORE_CLOCK" ]]; then
+  if ! "$PYTHON_BIN" "$GPU_TUNING_HELPER" apply \
+    --power-limit "$GPU_POWER_LIMIT" \
+    --memory-clock "$GPU_MEMORY_CLOCK" \
+    --core-clock "$GPU_CORE_CLOCK" \
+    --state-dir "$STATE_DIR"; then
+    printf '[vast-prl-launcher] gpu tuning apply reported an error; continuing without blocking watcher startup\n' >&2
+  fi
+fi
 
 cmd=(
   "$PYTHON_BIN"
