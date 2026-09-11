@@ -2,17 +2,17 @@
 
 This note describes the preferred path after the SRBMiner container tests on `rigv4` showed no GPU devices were being exposed inside the container.
 
-Instead of asking Vast to run a mining container as a default job, this path runs the miner directly on the host and lets a watcher start/stop that local process based on `vastai show machines --raw`.
+Instead of asking Vast to run a mining container as a default job, this path runs the miner directly on the host and lets a watcher start/stop that local process based on `vastai show machines --raw` plus `vastai show instances --raw`.
 
 ## Files
 
-- `vast_idle_host_miner.py`
-- `vast_idle_mining_watcher.py`
-- `vast_prl_host_miner_launcher.sh`
-- `vast-prl-host-miner.env.example`
-- `vast-prl-host-miner.service`
+- `scripts/vast_idle_host_miner.py`
+- `scripts/vast_idle_mining_watcher.py`
+- `scripts/vast_prl_host_miner_launcher.sh`
+- `config/vast-prl-host-miner.env.example`
+- `systemd/vast-prl-host-miner.service`
 
-Use `vast_idle_host_miner.py` for the host-native miner path.
+Use `scripts/vast_idle_host_miner.py` for the host-native miner path.
 
 ## Why this path
 
@@ -65,7 +65,7 @@ Success signals:
 ## Host-native watcher dry-run
 
 ```bash
-python3 ~/vast_idle_host_miner.py \
+python3 ./scripts/vast_idle_host_miner.py \
   --machine-id 150421 \
   --miner-exec /home/flyanb/srbminer/SRBMiner-MULTI \
   --miner-arg=--algorithm-gpu \
@@ -87,7 +87,7 @@ python3 ~/vast_idle_host_miner.py \
 ## Live watcher run
 
 ```bash
-python3 ~/vast_idle_host_miner.py \
+python3 ./scripts/vast_idle_host_miner.py \
   --machine-id 150421 \
   --miner-exec /home/flyanb/srbminer/SRBMiner-MULTI \
   --miner-arg=--algorithm-gpu \
@@ -112,9 +112,9 @@ Instead of putting the long Python command directly into `systemd`, use the laun
 Make the launcher executable and create the runtime config:
 
 ```bash
-chmod +x ~/vast_prl_host_miner_launcher.sh
+chmod +x ./scripts/vast_prl_host_miner_launcher.sh
 mkdir -p ~/.config
-cp ~/vast-prl-host-miner.env.example ~/.config/vast-prl-host-miner.env
+cp ./config/vast-prl-host-miner.env.example ~/.config/vast-prl-host-miner.env
 ```
 
 Edit `~/.config/vast-prl-host-miner.env` and set:
@@ -132,7 +132,7 @@ MACHINE_ID=150421 \
 PRL_WALLET=prl1p4pzpvqfw4czvyyy6nzgcps6q8nc350nr3736urhl0xqzdk6ekauqtxa7mk \
 WORKER_NAME=rigv4 \
 DRY_RUN=1 \
-~/vast_prl_host_miner_launcher.sh
+./scripts/vast_prl_host_miner_launcher.sh
 ```
 
 Make sure `vastai show machines` already works for the `flyanb` user before enabling `systemd`. If the CLI is not logged in, the watcher will fail at boot.
@@ -185,8 +185,8 @@ Install it like this on the host:
 
 ```bash
 mkdir -p ~/.config
-cp ~/vast-prl-host-miner.env.example ~/.config/vast-prl-host-miner.env
-sudo cp ~/vast-prl-host-miner.service /etc/systemd/system/
+cp ./config/vast-prl-host-miner.env.example ~/.config/vast-prl-host-miner.env
+sudo cp ./systemd/vast-prl-host-miner.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now vast-prl-host-miner.service
 ```

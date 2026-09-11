@@ -1,8 +1,8 @@
 # Vast Idle Mining Watcher
 
-This note describes the host-side watcher script in `vast_idle_mining_watcher.py`.
+This note describes the host-side watcher script in `scripts/vast_idle_mining_watcher.py`.
 
-This is now the secondary path. Bryan's validated setup moved to the host-native watcher in `vast_idle_host_miner.py` because the container path did not expose GPUs reliably on `rigv4`.
+This is now the secondary path. Bryan's validated setup moved to the host-native watcher in `scripts/vast_idle_host_miner.py` because the container path did not expose GPUs reliably on `rigv4`.
 
 ## Goal
 
@@ -87,7 +87,7 @@ For the client's current preference, use an SRBMiner-based container and LuckyPo
 LuckyPool recommends port `3360` for miners under `500 TH/s`, which fits `rigv4`.
 
 ```bash
-python3 vast_idle_mining_watcher.py \
+python3 ./scripts/vast_idle_mining_watcher.py \
   --machine-id 150421 \
   --image local/prl-srbminer:latest \
   --job-arg=--algorithm-gpu \
@@ -109,7 +109,7 @@ python3 vast_idle_mining_watcher.py \
 Dry-run first:
 
 ```bash
-python3 vast_idle_mining_watcher.py \
+python3 ./scripts/vast_idle_mining_watcher.py \
   --machine-id 150421 \
   --image local/prl-srbminer:latest \
   --job-arg=--algorithm-gpu \
@@ -145,7 +145,7 @@ Wants=network-online.target
 Type=simple
 User=flyanb
 WorkingDirectory=/home/flyanb
-ExecStart=/usr/bin/python3 /path/to/vast_idle_mining_watcher.py \
+ExecStart=/usr/bin/python3 /path/to/scripts/vast_idle_mining_watcher.py \
   --machine-id 150421 \
   --image local/prl-srbminer:latest \
   --job-arg=--algorithm-gpu \

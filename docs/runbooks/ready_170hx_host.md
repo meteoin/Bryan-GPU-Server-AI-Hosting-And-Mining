@@ -1,6 +1,6 @@
 # 170HX Host Bootstrap Script
 
-`ready_170hx_host.sh` automates the Bryan runbook for CMP 170HX hosts and is designed to be rerun safely after:
+`scripts/ready_170hx_host.sh` automates the Bryan runbook for CMP 170HX hosts and is designed to be rerun safely after:
 
 - the required NVIDIA driver reboot
 - the required `cmpunlocker` cold power-off
@@ -36,8 +36,8 @@ That directory contains:
 ## Example: fresh host, no storage migration yet
 
 ```bash
-chmod +x ready_170hx_host.sh
-./ready_170hx_host.sh
+chmod +x ./scripts/ready_170hx_host.sh
+./scripts/ready_170hx_host.sh
 ```
 
 The first run will likely stop after installing the pinned driver and tell you to reboot.
@@ -45,7 +45,7 @@ The first run will likely stop after installing the pinned driver and tell you t
 After reboot, rerun the same command:
 
 ```bash
-./ready_170hx_host.sh
+./scripts/ready_170hx_host.sh
 ```
 
 It will resume, skip completed steps, and continue into the unlock flow.
@@ -55,7 +55,7 @@ If `cmpunlocker` is applied successfully, it will stop and tell you to do a cold
 After powering the host back on, rerun it again:
 
 ```bash
-./ready_170hx_host.sh
+./scripts/ready_170hx_host.sh
 ```
 
 If password SSH is still enabled at that point, the script will stop and print:
@@ -67,7 +67,7 @@ If password SSH is still enabled at that point, the script will stop and print:
 After you test key login from your own machine, rerun with:
 
 ```bash
-./ready_170hx_host.sh --confirm-ssh-key-auth
+./scripts/ready_170hx_host.sh --confirm-ssh-key-auth
 ```
 
 That rerun lets the script disable password authentication and continue toward the Vast onboarding handoff.
@@ -79,7 +79,7 @@ By default, the script stops before running the Vast installer and tells the ope
 If you want the script to run the installer anyway, use:
 
 ```bash
-./ready_170hx_host.sh \
+./scripts/ready_170hx_host.sh \
   --run-vast-installer \
   --vast-installer-cmd 'PASTE_THE_VAST_HOST_INSTALLER_COMMAND_HERE'
 ```
@@ -87,13 +87,13 @@ If you want the script to run the installer anyway, use:
 If quoting the one-line command is annoying, put it in a file and use:
 
 ```bash
-./ready_170hx_host.sh --vast-installer-cmd-file ./vast_installer_cmd.txt
+./scripts/ready_170hx_host.sh --vast-installer-cmd-file ./vast_installer_cmd.txt
 ```
 
 ## Example: include Docker data-disk migration
 
 ```bash
-./ready_170hx_host.sh \
+./scripts/ready_170hx_host.sh \
   --data-disk /dev/nvme0n1
 ```
 
@@ -102,7 +102,7 @@ This follows the same XFS + `pquota` layout used in the Bryan runbook.
 ## Example: fully automated disruptive steps
 
 ```bash
-./ready_170hx_host.sh \
+./scripts/ready_170hx_host.sh \
   --auto-reboot \
   --auto-poweroff \
   --data-disk /dev/nvme0n1 \

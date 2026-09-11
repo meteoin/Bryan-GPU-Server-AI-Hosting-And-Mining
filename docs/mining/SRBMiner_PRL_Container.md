@@ -20,13 +20,13 @@ For the client's preference, this scaffold targets the US-West LuckyPool endpoin
 
 ## Files
 
-- `srbminer-prl-container/Dockerfile`
-- `srbminer-prl-container/entrypoint.sh`
+- `containers/srbminer-prl-container/Dockerfile`
+- `containers/srbminer-prl-container/entrypoint.sh`
 
 ## Build on the host
 
 ```bash
-cd ~/srbminer-prl-container
+cd ./containers/srbminer-prl-container
 docker build -t local/prl-srbminer:latest .
 ```
 
@@ -88,7 +88,7 @@ sudo docker run --rm --runtime=nvidia local/prl-srbminer:latest --list-devices
 ## Watcher example
 
 ```bash
-python3 ~/vast_idle_mining_watcher.py \
+python3 ./scripts/vast_idle_mining_watcher.py \
   --machine-id 150421 \
   --image local/prl-srbminer:latest \
   --job-arg=--algorithm-gpu \

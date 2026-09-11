@@ -15,15 +15,15 @@ This scaffold builds a local image around the Linux `p40-miner` binary from the 
 
 ## Files
 
-- `prl-miner-container/Dockerfile`
-- `prl-miner-container/entrypoint.sh`
+- `containers/prl-miner-container/Dockerfile`
+- `containers/prl-miner-container/entrypoint.sh`
 
 ## Build on the Vast host
 
 Copy the folder to the host and build it there:
 
 ```bash
-cd ~/prl-miner-container
+cd ./containers/prl-miner-container
 docker build -t local/prl-open-pearl-miner:latest .
 ```
 
@@ -57,7 +57,7 @@ docker run --rm --gpus all \
 ## Watcher example
 
 ```bash
-python3 ~/vast_idle_mining_watcher.py \
+python3 ./scripts/vast_idle_mining_watcher.py \
   --machine-id 150421 \
   --image local/prl-open-pearl-miner:latest \
   --job-arg=--wallet \
