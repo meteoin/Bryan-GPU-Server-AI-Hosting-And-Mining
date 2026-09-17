@@ -243,6 +243,12 @@ def detect_machine_state(machine: dict[str, Any], instances: list[dict[str, Any]
     if active_instances:
         return DetectResult("busy", active_instances)
 
+    # current_rentals_on_demand / resident stay >0 while the machine is listed,
+    # even with no renter. Occupancy is the GPU-level signal.
+    if occup_idle is True:
+        reasons.append(f"occup={occup}")
+        return DetectResult("idle", reasons)
+
     for key in AMBIGUOUS_COUNT_KEYS:
         value = machine.get(key)
         try:
@@ -264,10 +270,6 @@ def detect_machine_state(machine: dict[str, Any], instances: list[dict[str, Any]
         if any(token in lowered for token in IDLE_TEXT_TOKENS):
             reasons.append(f"{key}={value}")
             return DetectResult("idle", reasons)
-
-    if occup_idle is True:
-        reasons.append(f"occup={occup}")
-        return DetectResult("idle", reasons)
 
     return DetectResult("unknown", ["no reliable idle/busy signal found"])
 

@@ -27,7 +27,7 @@
       ]
     },
     "miner-watcher": {
-      "version": "1.0.0",
+      "version": "1.0.1",
       "auto_update": true,
       "profiles": ["170hx-host", "miner-only"],
       "restart": "vast-prl-host-miner.service",
