@@ -66,7 +66,10 @@ fetch_remote_manifest() {
     git -C "${SRC_DIR}" remote set-url origin "${REPO}" >/dev/null 2>&1 || git -C "${SRC_DIR}" remote add origin "${REPO}"
     if git -C "${SRC_DIR}" fetch --depth 1 origin "${REF}"; then
       if git -C "${SRC_DIR}" show "origin/${REF}:manifest.json" > "${REMOTE_MANIFEST}" 2>/dev/null; then
-        git -C "${SRC_DIR}" merge --ff-only "origin/${REF}" >/dev/null 2>&1 || true
+        if ! git -C "${SRC_DIR}" merge --ff-only "origin/${REF}" >/dev/null 2>&1; then
+          bryan_log "Fast-forward failed (likely a force-push); resetting clone to origin/${REF}"
+          git -C "${SRC_DIR}" checkout -q -B "${REF}" "origin/${REF}" || git -C "${SRC_DIR}" reset --hard "origin/${REF}"
+        fi
         return 0
       fi
     fi
@@ -322,7 +325,8 @@ if [[ "${TIMER_AUTO}" == "1" && ( "${UPDATE_AUTO}" == "False" || "${UPDATE_AUTO}
   exit 0
 fi
 
-bryan_python -c 'import json,sys; [print(json.dumps(item)) for item in json.loads(sys.argv[1])["plan"]]' "${PLAN_JSON}" | while IFS= read -r item; do
+mapfile -t UPDATE_ITEMS < <(bryan_python -c 'import json,sys; [print(json.dumps(item)) for item in json.loads(sys.argv[1])["plan"]]' "${PLAN_JSON}")
+for item in "${UPDATE_ITEMS[@]}"; do
   name="$(bryan_python -c 'import json,sys; print(json.loads(sys.argv[1])["name"])' "${item}")"
   version="$(bryan_python -c 'import json,sys; print(json.loads(sys.argv[1])["to"])' "${item}")"
   auto="$(bryan_python -c 'import json,sys; print("1" if json.loads(sys.argv[1])["auto_update"] else "0")' "${item}")"
@@ -346,6 +350,19 @@ bryan_python -c 'import json,sys; [print(json.dumps(item)) for item in json.load
     maybe_restart_miner || true
   fi
 done
+
+mkdir -p "${LIB_DIR}"
+if [[ ! -f "${LIB_DIR}/terminal_miner_control.py" ]]; then
+  if git -C "${SRC_DIR}" show "origin/${REF}:scripts/terminal_miner_control.py" > "${LIB_DIR}/terminal_miner_control.py" 2>/dev/null; then
+    bryan_log "Installed terminal app to ${LIB_DIR}/terminal_miner_control.py"
+  fi
+fi
+bryan_install_cli_from_tree "${SRC_DIR}"
+if [[ -f "${LIB_DIR}/terminal_miner_control.py" ]]; then
+  bryan_log "controlpanel: python3 ${LIB_DIR}/terminal_miner_control.py"
+else
+  bryan_log "WARNING: terminal_miner_control.py is still missing from ${LIB_DIR}"
+fi
 
 bryan_log "Update pass complete"
 print_status

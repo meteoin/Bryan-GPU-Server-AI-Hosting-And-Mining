@@ -283,10 +283,16 @@ PY
 }
 
 bryan_ensure_controlpanel_alias() {
-  local alias_line="alias controlpanel='${BRYAN_BIN_DIR}/controlpanel'"
+  local app="${BRYAN_LIB_DIR}/terminal_miner_control.py"
+  local alias_line
+  if [[ -f "${app}" ]]; then
+    alias_line="alias controlpanel='${PYTHON_BIN:-python3} ${app}'"
+  else
+    alias_line="alias controlpanel='${BRYAN_BIN_DIR}/controlpanel'"
+  fi
   local path_line="export PATH=\"${BRYAN_BIN_DIR}:\$PATH\""
   local rc
-  mkdir -p "${BRYAN_BIN_DIR}"
+  mkdir -p "${BRYAN_BIN_DIR}" || true
   for rc in "${BRYAN_HOME}/.bashrc" "${BRYAN_HOME}/.profile"; do
     touch "${rc}"
     if ! grep -Fq "${BRYAN_BIN_DIR}" "${rc}"; then
@@ -296,6 +302,24 @@ bryan_ensure_controlpanel_alias() {
       } >> "${rc}"
     fi
     if grep -Fq "alias controlpanel=" "${rc}"; then
+      python3 - "${rc}" "${alias_line}" <<'PY' || true
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+wanted = sys.argv[2]
+lines = path.read_text().splitlines()
+out = []
+replaced = False
+for line in lines:
+    if line.startswith("alias controlpanel="):
+        out.append(wanted)
+        replaced = True
+    else:
+        out.append(line)
+if not replaced:
+    out.extend(["", "# bryan-gpu-setup controlpanel", wanted])
+path.write_text("\n".join(out) + "\n")
+PY
       continue
     fi
     {
@@ -309,7 +333,7 @@ bryan_ensure_controlpanel_alias() {
       printf '%s\n' "${alias_line}"
     } >> "${BRYAN_HOME}/.zshrc"
   fi
-  bryan_log "controlpanel command: ${BRYAN_BIN_DIR}/controlpanel"
+  bryan_log "controlpanel alias -> ${alias_line}"
 }
 
 bryan_install_cli_from_tree() {
