@@ -677,15 +677,22 @@ This was confirmed successfully on Bryan's host.
 
 ### 16.5 Host-side SSH posture
 
-The working host-side posture after this change was:
+Preferred posture after key login is proven:
 
-- `permitrootlogin no`
-- `pubkeyauthentication yes`
-- `passwordauthentication yes`
+- `PermitRootLogin no`
+- `PubkeyAuthentication yes`
+- `PasswordAuthentication no`
 
-This keeps password-based login available, but only behind the VPN boundary after public WAN SSH was paused.
+The `rigv3` cutover process and an admin-laptop script are in:
 
-This is not as strong as key-only SSH, but it is a major improvement over exposing host SSH on the public internet.
+- `docs/runbooks/SSH_Key_Only_Access.md`
+- `scripts/setup_ssh_key_access.sh`
+
+Do not disable password SSH until this test succeeds from the laptop:
+
+```bash
+ssh -i ~/.ssh/id_ed25519_rigv3 -o IdentitiesOnly=yes -o PasswordAuthentication=no flyanb@192.168.1.174
+```
 
 ---
 

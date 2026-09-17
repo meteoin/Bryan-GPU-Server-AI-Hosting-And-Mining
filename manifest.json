@@ -1,12 +1,12 @@
 {
-  "release": "1.0.6",
+  "release": "1.0.7",
   "channel": "stable",
   "released_at": "2026-09-17T00:00:00Z",
   "min_installer": "1.0.0",
   "repo": "https://github.com/meteoin/Bryan-GPU-Server-AI-Hosting-And-Mining.git",
   "components": {
     "installer": {
-      "version": "1.0.6",
+      "version": "1.0.7",
       "auto_update": true,
       "profiles": ["170hx-host", "miner-only"],
       "files": [

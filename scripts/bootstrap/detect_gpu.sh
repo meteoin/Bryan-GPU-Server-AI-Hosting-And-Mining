@@ -44,7 +44,7 @@ summarize_detected_gpus() {
     RECOMMENDED_PROFILE="170hx-host"
   elif [[ "${other_count}" -gt 0 ]]; then
     local names
-    names="$(printf '%s\n' "${lines}" | grep -i NVIDIA | sed -E 's/^[^:]+: //; s/ \\[.*//' | head -n 3 | paste -sd ', ' -)"
+    names="$(printf '%s\n' "${lines}" | grep -i NVIDIA | sed 's/.*: //; s/ \[.*//' | head -n 3 | paste -sd ', ' -)"
     if [[ -z "${names}" ]]; then
       names="NVIDIA GPU"
     fi

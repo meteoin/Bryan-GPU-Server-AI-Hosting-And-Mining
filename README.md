@@ -7,7 +7,7 @@ This repo contains the runbooks, scripts, and deployment assets for Bryan's Vast
 - `docs/architecture/`
   - project context, architecture, glossary, security notes, and implementation planning
 - `docs/runbooks/`
-  - operator runbooks for host bring-up and recovery
+  - operator runbooks for host bring-up, recovery, and SSH key-only access
 - `docs/mining/`
   - mining-specific docs, container experiments, and the terminal control plan
 - `scripts/`
@@ -57,8 +57,10 @@ See `docs/runbooks/GitHub_Curl_Installer.md` for the operator flow.
   - watcher service unit
 - `docs/mining/Host_Native_PRL_Mining.md`
   - main mining setup and operating guide
-- `docs/mining/Terminal_Miner_Control_Plan.md`
-  - terminal UI feasibility and implementation plan
+- `docs/runbooks/GitHub_Curl_Installer.md`
+  - curl installer and auto-update operator guide
+- `docs/runbooks/SSH_Key_Only_Access.md`
+  - laptop-to-host SSH key install and password disable
 
 ## Current preferred path
 
