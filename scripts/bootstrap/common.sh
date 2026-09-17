@@ -282,6 +282,48 @@ raise SystemExit(0 if observed == "busy" else 1)
 PY
 }
 
+bryan_ensure_controlpanel_alias() {
+  local alias_line="alias controlpanel='${BRYAN_BIN_DIR}/controlpanel'"
+  local path_line="export PATH=\"${BRYAN_BIN_DIR}:\$PATH\""
+  local rc
+  mkdir -p "${BRYAN_BIN_DIR}"
+  for rc in "${BRYAN_HOME}/.bashrc" "${BRYAN_HOME}/.profile"; do
+    touch "${rc}"
+    if ! grep -Fq "${BRYAN_BIN_DIR}" "${rc}"; then
+      {
+        printf '\n# bryan-gpu-setup path\n'
+        printf '%s\n' "${path_line}"
+      } >> "${rc}"
+    fi
+    if grep -Fq "alias controlpanel=" "${rc}"; then
+      continue
+    fi
+    {
+      printf '\n# bryan-gpu-setup controlpanel\n'
+      printf '%s\n' "${alias_line}"
+    } >> "${rc}"
+  done
+  if [[ -f "${BRYAN_HOME}/.zshrc" ]] && ! grep -Fq "alias controlpanel=" "${BRYAN_HOME}/.zshrc"; then
+    {
+      printf '\n# bryan-gpu-setup controlpanel\n'
+      printf '%s\n' "${alias_line}"
+    } >> "${BRYAN_HOME}/.zshrc"
+  fi
+  bryan_log "controlpanel command: ${BRYAN_BIN_DIR}/controlpanel"
+}
+
+bryan_install_cli_from_tree() {
+  local repo_root="$1"
+  mkdir -p "${BRYAN_BIN_DIR}"
+  if [[ -f "${repo_root}/scripts/bryan-gpu-setup" ]]; then
+    bryan_atomic_copy "${repo_root}/scripts/bryan-gpu-setup" "${BRYAN_BIN_DIR}/bryan-gpu-setup" 755
+  fi
+  if [[ -f "${repo_root}/scripts/controlpanel" ]]; then
+    bryan_atomic_copy "${repo_root}/scripts/controlpanel" "${BRYAN_BIN_DIR}/controlpanel" 755
+  fi
+  bryan_ensure_controlpanel_alias
+}
+
 bryan_systemctl() {
   if [[ "$(id -u)" -eq 0 ]]; then
     systemctl "$@"

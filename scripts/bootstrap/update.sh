@@ -208,12 +208,15 @@ refresh_templated_units() {
       bryan_run_sudo cp "${repo_root}/systemd/bryan-gpu-setup-update.timer" "/etc/systemd/system/${BRYAN_UPDATE_TIMER}" || true
     fi
   fi
-  if [[ -x "${repo_root}/scripts/bryan-gpu-setup" ]]; then
-    bryan_atomic_copy "${repo_root}/scripts/bryan-gpu-setup" "${BRYAN_BIN_DIR}/bryan-gpu-setup" 755
+  mkdir -p "${BRYAN_BIN_DIR}"
+  if git -C "${SRC_DIR}" show "origin/${REF}:scripts/controlpanel" > /dev/null 2>&1; then
+    local tmp
+    tmp="$(mktemp "${BRYAN_BIN_DIR}/controlpanel.XXXXXX")"
+    git -C "${SRC_DIR}" show "origin/${REF}:scripts/controlpanel" > "${tmp}"
+    chmod 755 "${tmp}"
+    mv "${tmp}" "${BRYAN_BIN_DIR}/controlpanel"
   fi
-  if [[ -x "${repo_root}/scripts/controlpanel" || -f "${repo_root}/scripts/controlpanel" ]]; then
-    bryan_atomic_copy "${repo_root}/scripts/controlpanel" "${BRYAN_BIN_DIR}/controlpanel" 755
-  fi
+  bryan_install_cli_from_tree "${repo_root}"
   bryan_systemctl daemon-reload || true
 }
 
