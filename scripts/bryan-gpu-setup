@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Installed CLI wrapper. Prefers the local src checkout so updates can replace it.
+set -Eeuo pipefail
+
+STATE_FILE="${BRYAN_SETUP_STATE:-${HOME}/.local/state/bryan-gpu-setup/installed.json}"
+SRC_DIR=""
+
+if [[ -f "${STATE_FILE}" ]]; then
+  SRC_DIR="$(python3 - "${STATE_FILE}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    print(json.loads(path.read_text()).get("src_dir") or "")
+except Exception:
+    print("")
+PY
+)"
+fi
+
+if [[ -z "${SRC_DIR}" ]]; then
+  SRC_DIR="${BRYAN_SETUP_SRC:-${HOME}/.local/share/bryan-gpu-setup/src}"
+fi
+
+if [[ -f "${SRC_DIR}/scripts/bootstrap/cli.sh" ]]; then
+  exec bash "${SRC_DIR}/scripts/bootstrap/cli.sh" "$@"
+fi
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "${SELF_DIR}/bootstrap/cli.sh" ]]; then
+  exec bash "${SELF_DIR}/bootstrap/cli.sh" "$@"
+fi
+
+echo "Bryan GPU setup is not installed. Run install.sh first." >&2
+exit 1

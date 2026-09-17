@@ -1,0 +1,16 @@
+[Unit]
+Description=Bryan GPU setup update check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@USER@
+WorkingDirectory=@HOME@
+Environment=HOME=@HOME@
+Environment=PATH=@PATH@
+ExecStart=@BIN_DIR@/bryan-gpu-setup update --apply --auto
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

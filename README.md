@@ -12,12 +12,32 @@ This repo contains the runbooks, scripts, and deployment assets for Bryan's Vast
   - mining-specific docs, container experiments, and the terminal control plan
 - `scripts/`
   - executable host automation scripts and watchers
+- `scripts/bootstrap/`
+  - curl installer, GPU detection, and the host update service
 - `config/`
   - example runtime config files
 - `systemd/`
   - service unit files
 - `containers/`
   - Docker-based miner experiments
+
+## Install
+
+On a new NVIDIA host:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/meteoin/Bryan-GPU-Server-AI-Hosting-And-Mining/main/install.sh)
+```
+
+That command detects CMP 170HX vs other NVIDIA GPUs, then installs either the 170HX Vast bootstrap plus mining, or mining + terminal only. After install, `bryan-gpu-setup-update.timer` checks the repo every 6 hours and applies only components whose version changed.
+
+```bash
+bryan-gpu-setup update --status
+bryan-gpu-setup update --check
+bryan-gpu-setup update --apply
+```
+
+See `docs/runbooks/GitHub_Curl_Installer.md` for the operator flow.
 
 ## Most important files
 
@@ -60,3 +80,11 @@ If `GPU_POWER_LIMIT`, `GPU_MEMORY_CLOCK`, or `GPU_CORE_CLOCK` are set in the env
 - validates requested values against supported ranges or supported clocks when available
 - applies only the supported settings
 - writes a state snapshot to `STATE_DIR/gpu_tuning_state.json` for the terminal dashboard
+
+Important: automated GPU tuning needs non-interactive root access to `nvidia-smi`. On `rigv4`, the fix was a sudoers drop-in for `flyanb`:
+
+```sudoers
+flyanb ALL=(root) NOPASSWD: /usr/bin/nvidia-smi
+```
+
+Without that rule, the dashboard can show a requested `GPU PL` value while the actual cards remain at the default NVIDIA limit.

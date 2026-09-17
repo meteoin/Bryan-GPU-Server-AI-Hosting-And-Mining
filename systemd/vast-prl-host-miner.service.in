@@ -1,0 +1,20 @@
+[Unit]
+Description=Vast idle PRL host miner watcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@HOME@
+Environment=HOME=@HOME@
+Environment=PATH=@PATH@
+EnvironmentFile=@ENV_FILE@
+ExecStart=@LIB_DIR@/vast_prl_host_miner_launcher.sh
+Restart=always
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

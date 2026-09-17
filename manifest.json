@@ -1,0 +1,81 @@
+{
+  "release": "1.0.0",
+  "channel": "stable",
+  "released_at": "2026-09-17T00:00:00Z",
+  "min_installer": "1.0.0",
+  "repo": "https://github.com/meteoin/Bryan-GPU-Server-AI-Hosting-And-Mining.git",
+  "components": {
+    "installer": {
+      "version": "1.0.0",
+      "auto_update": true,
+      "profiles": ["170hx-host", "miner-only"],
+      "files": [
+        "install.sh",
+        "manifest.json",
+        "scripts/bryan-gpu-setup",
+        "scripts/bootstrap/cli.sh",
+        "scripts/bootstrap/common.sh",
+        "scripts/bootstrap/detect_gpu.sh",
+        "scripts/bootstrap/install.sh",
+        "scripts/bootstrap/install_miner.sh",
+        "scripts/bootstrap/update.sh",
+        "systemd/bryan-gpu-setup-update.service.in",
+        "systemd/bryan-gpu-setup-update.timer",
+        "systemd/vast-prl-host-miner.service.in"
+      ]
+    },
+    "miner-watcher": {
+      "version": "1.0.0",
+      "auto_update": true,
+      "profiles": ["170hx-host", "miner-only"],
+      "restart": "vast-prl-host-miner.service",
+      "idle_only_restart": true,
+      "files": [
+        "scripts/vast_idle_host_miner.py",
+        "scripts/vast_prl_host_miner_launcher.sh"
+      ]
+    },
+    "terminal-app": {
+      "version": "1.0.0",
+      "auto_update": true,
+      "profiles": ["170hx-host", "miner-only"],
+      "files": [
+        "scripts/terminal_miner_control.py"
+      ]
+    },
+    "gpu-tuning": {
+      "version": "1.0.0",
+      "auto_update": true,
+      "profiles": ["170hx-host", "miner-only"],
+      "files": [
+        "scripts/gpu_tuning_helper.py"
+      ]
+    },
+    "systemd-unit": {
+      "version": "1.0.0",
+      "auto_update": true,
+      "profiles": ["170hx-host", "miner-only"],
+      "restart": "vast-prl-host-miner.service",
+      "idle_only_restart": true,
+      "files": [
+        "systemd/vast-prl-host-miner.service.in"
+      ]
+    },
+    "srbminer": {
+      "version": "3.6.2",
+      "auto_update": false,
+      "kind": "external-binary",
+      "profiles": ["170hx-host", "miner-only"],
+      "idle_only_restart": true,
+      "url": "https://github.com/doktor83/SRBMiner-Multi/releases/download/3.6.2/SRBMiner-Multi-3-6-2-Linux.tar.gz"
+    },
+    "170hx-bootstrap": {
+      "version": "1.0.0",
+      "auto_update": false,
+      "profiles": ["170hx-host"],
+      "files": [
+        "scripts/ready_170hx_host.sh"
+      ]
+    }
+  }
+}

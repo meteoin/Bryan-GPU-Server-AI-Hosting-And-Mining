@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodically fetch Bryan GPU setup updates
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=6h
+RandomizedDelaySec=15min
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

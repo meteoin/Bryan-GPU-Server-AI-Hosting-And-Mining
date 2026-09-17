@@ -125,6 +125,28 @@ Edit `~/.config/vast-prl-host-miner.env` and set:
 - `POOL`
 - `POOL_PASSWORD`
 
+If you plan to use `GPU_POWER_LIMIT`, `GPU_MEMORY_CLOCK`, or `GPU_CORE_CLOCK`, the watcher and terminal control panel need non-interactive permission to run `nvidia-smi` as root. Without that, the UI may show requested tuning values while the cards stay on the default NVIDIA limits.
+
+Recommended host setup:
+
+```bash
+which nvidia-smi
+sudo visudo -f /etc/sudoers.d/flyanb-nvidia-smi
+```
+
+Add:
+
+```sudoers
+flyanb ALL=(root) NOPASSWD: /usr/bin/nvidia-smi
+```
+
+Then validate:
+
+```bash
+sudo -l
+sudo -n nvidia-smi -pl 200
+```
+
 Dry-run the launcher first:
 
 ```bash
@@ -209,6 +231,10 @@ Troubleshooting notes:
 - If the service appears to stop/start unexpectedly, check for restarts and the exit reason:
   - `journalctl -u vast-prl-host-miner --since "10 minutes ago" --no-pager`
   - `systemctl show -p NRestarts,ExecMainStatus,ExecMainCode vast-prl-host-miner`
+- If GPU tuning values are visible in the dashboard but `nvidia-smi` still shows the default `250W` limit, test the privilege path directly:
+  - `python3 /home/flyanb/gpu_tuning_helper.py apply --power-limit 200 --state-dir ~/.local/state/vast-host-miner/150421`
+  - `nvidia-smi --query-gpu=index,name,power.limit,power.draw --format=csv`
+  - if the helper reports `Insufficient Permissions`, the `sudoers` rule for `/usr/bin/nvidia-smi` is missing or incorrect
 
 To stop or pause mining automation:
 
