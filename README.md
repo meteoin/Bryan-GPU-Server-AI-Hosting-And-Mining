@@ -64,7 +64,13 @@ The preferred live path is the host-native SRBMiner flow, not the container mini
 
 ## Terminal control app
 
-Run the first terminal dashboard version with:
+Run the terminal dashboard with:
+
+```bash
+controlpanel
+```
+
+That is an alias/command for `scripts/terminal_miner_control.py`. From a repo checkout you can also run:
 
 ```bash
 python3 ./scripts/terminal_miner_control.py

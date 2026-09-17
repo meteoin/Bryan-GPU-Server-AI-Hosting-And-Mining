@@ -211,6 +211,9 @@ refresh_templated_units() {
   if [[ -x "${repo_root}/scripts/bryan-gpu-setup" ]]; then
     bryan_atomic_copy "${repo_root}/scripts/bryan-gpu-setup" "${BRYAN_BIN_DIR}/bryan-gpu-setup" 755
   fi
+  if [[ -x "${repo_root}/scripts/controlpanel" || -f "${repo_root}/scripts/controlpanel" ]]; then
+    bryan_atomic_copy "${repo_root}/scripts/controlpanel" "${BRYAN_BIN_DIR}/controlpanel" 755
+  fi
   bryan_systemctl daemon-reload || true
 }
 

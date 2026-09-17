@@ -83,8 +83,37 @@ To pause automatic applies without removing the timer, set `"update_auto": false
 ## After install
 
 ```bash
-python3 ~/.local/lib/bryan-gpu-setup/terminal_miner_control.py
+controlpanel
 sudo systemctl start vast-prl-host-miner.service
 ```
 
+`controlpanel` is installed to `~/.local/bin/controlpanel` and added as a shell alias. Open a new shell, or run `source ~/.bashrc`, then type `controlpanel`.
+
 Keep `~/.local/bin` on `PATH` so `bryan-gpu-setup` resolves.
+
+## Disk full on home
+
+If install fails with `No space left on device` under `~/.local/share`, the home/root filesystem is full. That is common on `rigv3` because Docker data lives on the NVMe while `/home` is still on the small system disk.
+
+Check:
+
+```bash
+df -h
+du -xh -d1 ~ | sort -h | tail
+sudo journalctl --disk-usage
+```
+
+Free some space if you can:
+
+```bash
+sudo journalctl --vacuum-size=200M
+sudo apt-get clean
+```
+
+Or install onto the large data disk:
+
+```bash
+sudo mkdir -p /var/lib/docker/bryan-gpu-setup
+sudo chown "$USER:$USER" /var/lib/docker/bryan-gpu-setup
+BRYAN_SETUP_ROOT=/var/lib/docker/bryan-gpu-setup bash <(curl -fsSL https://raw.githubusercontent.com/meteoin/Bryan-GPU-Server-AI-Hosting-And-Mining/main/install.sh)
+```

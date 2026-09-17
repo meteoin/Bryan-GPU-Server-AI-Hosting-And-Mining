@@ -9,10 +9,12 @@ Instead of asking Vast to run a mining container as a default job, this path run
 - `scripts/vast_idle_host_miner.py`
 - `scripts/vast_idle_mining_watcher.py`
 - `scripts/vast_prl_host_miner_launcher.sh`
+- `scripts/terminal_miner_control.py`
+- `scripts/controlpanel`
 - `config/vast-prl-host-miner.env.example`
 - `systemd/vast-prl-host-miner.service`
 
-Use `scripts/vast_idle_host_miner.py` for the host-native miner path.
+Use `scripts/vast_idle_host_miner.py` for the host-native miner path. After install, open the terminal UI with `controlpanel`.
 
 ## Why this path
 

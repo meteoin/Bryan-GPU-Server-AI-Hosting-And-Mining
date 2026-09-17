@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# Launch the terminal miner control panel.
+set -Eeuo pipefail
+
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+STATE_CANDIDATES=(
+  "${BRYAN_SETUP_STATE:-}/installed.json"
+  "${BRYAN_SETUP_ROOT:-}/state/installed.json"
+  "${HOME}/.local/state/bryan-gpu-setup/installed.json"
+  "/var/lib/docker/bryan-gpu-setup/state/installed.json"
+)
+
+lib_dir_from_state() {
+  local state_file="$1"
+  python3 - "${state_file}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    print(json.loads(path.read_text()).get("lib_dir") or "")
+except Exception:
+    print("")
+PY
+}
+
+APP=""
+for state_file in "${STATE_CANDIDATES[@]}"; do
+  if [[ -n "${state_file}" && -f "${state_file}" ]]; then
+    lib_dir="$(lib_dir_from_state "${state_file}")"
+    if [[ -n "${lib_dir}" && -f "${lib_dir}/terminal_miner_control.py" ]]; then
+      APP="${lib_dir}/terminal_miner_control.py"
+      break
+    fi
+  fi
+done
+
+if [[ -z "${APP}" ]]; then
+  for candidate in \
+    "${BRYAN_SETUP_LIB:-}/terminal_miner_control.py" \
+    "${HOME}/.local/lib/bryan-gpu-setup/terminal_miner_control.py" \
+    "/var/lib/docker/bryan-gpu-setup/lib/terminal_miner_control.py"
+  do
+    if [[ -f "${candidate}" ]]; then
+      APP="${candidate}"
+      break
+    fi
+  done
+fi
+
+if [[ -z "${APP}" ]]; then
+  SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [[ -f "${SELF_DIR}/terminal_miner_control.py" ]]; then
+    APP="${SELF_DIR}/terminal_miner_control.py"
+  elif [[ -f "${SELF_DIR}/scripts/terminal_miner_control.py" ]]; then
+    APP="${SELF_DIR}/scripts/terminal_miner_control.py"
+  fi
+fi
+
+if [[ -z "${APP}" || ! -f "${APP}" ]]; then
+  echo "controlpanel: terminal miner control app not found. Install first or run python3 ./scripts/terminal_miner_control.py from the repo." >&2
+  exit 1
+fi
+
+exec "${PYTHON_BIN}" "${APP}" "$@"

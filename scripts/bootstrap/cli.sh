@@ -17,6 +17,7 @@ Commands:
   update --apply      Fetch and apply changed components
   update --status     Show installed component versions
   gpu                 Print GPU detection summary
+  controlpanel        Open the terminal miner control panel
   help                Show this help
 EOF
 }
@@ -35,6 +36,9 @@ case "${COMMAND}" in
     ;;
   gpu|detect)
     exec bash "${BOOTSTRAP_DIR}/detect_gpu.sh" --print
+    ;;
+  controlpanel|panel)
+    exec bash "${BOOTSTRAP_DIR}/../controlpanel" "$@"
     ;;
   status)
     exec bash "${BOOTSTRAP_DIR}/update.sh" --status

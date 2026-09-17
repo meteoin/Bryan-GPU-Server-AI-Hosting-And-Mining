@@ -4,6 +4,15 @@ set -Eeuo pipefail
 
 BRYAN_DEFAULT_REPO="${BRYAN_SETUP_REPO:-https://github.com/meteoin/Bryan-GPU-Server-AI-Hosting-And-Mining.git}"
 BRYAN_SRC_DIR="${BRYAN_SETUP_SRC:-${HOME}/.local/share/bryan-gpu-setup/src}"
+BRYAN_MIN_FREE_MB="${BRYAN_MIN_FREE_MB:-1024}"
+
+if [[ -n "${BRYAN_SETUP_ROOT:-}" ]]; then
+  BRYAN_SRC_DIR="${BRYAN_SETUP_SRC:-${BRYAN_SETUP_ROOT%/}/src}"
+  export BRYAN_SETUP_SRC="${BRYAN_SRC_DIR}"
+  export BRYAN_SETUP_LIB="${BRYAN_SETUP_LIB:-${BRYAN_SETUP_ROOT%/}/lib}"
+  export BRYAN_SETUP_STATE="${BRYAN_SETUP_STATE:-${BRYAN_SETUP_ROOT%/}/state}"
+  export BRYAN_SRBMINER_DIR="${BRYAN_SRBMINER_DIR:-${BRYAN_SETUP_ROOT%/}/srbminer}"
+fi
 
 repo_slug() {
   local repo="${1%.git}"
@@ -56,6 +65,59 @@ command -v python3 >/dev/null 2>&1 || {
 
 REF="$(latest_ref)"
 export BRYAN_SETUP_REF="${REF}"
+
+existing_dir() {
+  local dir="$1"
+  while [[ ! -d "${dir}" && "${dir}" != "/" ]]; do
+    dir="$(dirname "${dir}")"
+  done
+  printf '%s\n' "${dir}"
+}
+
+require_disk_space() {
+  local target="$1"
+  local need_mb="${2:-${BRYAN_MIN_FREE_MB}}"
+  local probe avail_mb
+  probe="$(existing_dir "${target}")"
+  avail_mb="$(df -Pm "${probe}" 2>/dev/null | awk 'NR==2 {print $4}')"
+  if [[ -z "${avail_mb}" ]]; then
+    return 0
+  fi
+  if [[ "${avail_mb}" -ge "${need_mb}" ]]; then
+    return 0
+  fi
+  cat >&2 <<EOF
+Not enough free space to install Bryan GPU setup.
+
+  target: ${target}
+  filesystem: ${probe}
+  free: ${avail_mb} MB
+  needed: ${need_mb} MB
+
+Disk use:
+EOF
+  df -h "${probe}" / "${HOME}" /var/lib/docker 2>/dev/null || df -h
+  cat >&2 <<'EOF'
+
+This is a full disk, not a GitHub download failure.
+
+On rigv3-class hosts the system/home disk is often small while the NVMe
+data disk is mounted at /var/lib/docker. Free space on home, or install
+onto the large disk:
+
+  df -h
+  du -xh -d1 ~ | sort -h | tail
+  sudo journalctl --vacuum-size=200M
+  sudo apt-get clean
+
+Then rerun, optionally on the data disk:
+
+  BRYAN_SETUP_ROOT=/var/lib/docker/bryan-gpu-setup bash <(curl -fsSL https://raw.githubusercontent.com/meteoin/Bryan-GPU-Server-AI-Hosting-And-Mining/main/install.sh)
+EOF
+  exit 1
+}
+
+require_disk_space "$(dirname "${BRYAN_SRC_DIR}")"
 mkdir -p "$(dirname "${BRYAN_SRC_DIR}")"
 if [[ -d "${BRYAN_SRC_DIR}/.git" ]]; then
   git -C "${BRYAN_SRC_DIR}" remote set-url origin "${BRYAN_DEFAULT_REPO}" >/dev/null 2>&1 || true
