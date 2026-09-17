@@ -1,27 +1,51 @@
 #!/usr/bin/env bash
-# Installed CLI wrapper. Prefers the local src checkout so updates can replace it.
+# Installed CLI wrapper. Syncs the local clone before running the real CLI
+# so force-pushes and missed copies can be repaired by update --apply.
 set -Eeuo pipefail
 
-STATE_FILE="${BRYAN_SETUP_STATE:-${HOME}/.local/state/bryan-gpu-setup/installed.json}"
-SRC_DIR=""
+STATE_FILE=""
+for candidate in \
+  "${BRYAN_SETUP_STATE:-}/installed.json" \
+  "${HOME}/.local/state/bryan-gpu-setup/installed.json" \
+  "/var/lib/docker/bryan-gpu-setup/state/installed.json"
+do
+  if [[ -n "${candidate}" && -f "${candidate}" ]]; then
+    STATE_FILE="${candidate}"
+    break
+  fi
+done
 
-if [[ -f "${STATE_FILE}" ]]; then
-  SRC_DIR="$(python3 - "${STATE_FILE}" <<'PY'
+SRC_DIR=""
+REPO=""
+REF="main"
+if [[ -n "${STATE_FILE}" ]]; then
+  eval "$(python3 - "${STATE_FILE}" <<'PY'
 import json
+import shlex
 import sys
 from pathlib import Path
 
-path = Path(sys.argv[1])
-try:
-    print(json.loads(path.read_text()).get("src_dir") or "")
-except Exception:
-    print("")
+data = json.loads(Path(sys.argv[1]).read_text())
+print("SRC_DIR=" + shlex.quote(str(data.get("src_dir") or "")))
+print("REPO=" + shlex.quote(str(data.get("repo") or "")))
+print("REF=" + shlex.quote(str(data.get("ref") or "main")))
 PY
 )"
 fi
 
 if [[ -z "${SRC_DIR}" ]]; then
   SRC_DIR="${BRYAN_SETUP_SRC:-${HOME}/.local/share/bryan-gpu-setup/src}"
+fi
+if [[ -z "${REPO}" ]]; then
+  REPO="${BRYAN_SETUP_REPO:-https://github.com/meteoin/Bryan-GPU-Server-AI-Hosting-And-Mining.git}"
+fi
+
+if [[ -d "${SRC_DIR}/.git" ]]; then
+  git -C "${SRC_DIR}" remote set-url origin "${REPO}" >/dev/null 2>&1 || true
+  git -C "${SRC_DIR}" fetch --depth 1 origin "${REF}" >/dev/null 2>&1 || true
+  git -C "${SRC_DIR}" checkout -q -B "${REF}" "origin/${REF}" >/dev/null 2>&1 \
+    || git -C "${SRC_DIR}" reset --hard "origin/${REF}" >/dev/null 2>&1 \
+    || true
 fi
 
 if [[ -f "${SRC_DIR}/scripts/bootstrap/cli.sh" ]]; then

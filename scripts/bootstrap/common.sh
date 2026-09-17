@@ -282,6 +282,63 @@ raise SystemExit(0 if observed == "busy" else 1)
 PY
 }
 
+bryan_try_copy() {
+  bryan_atomic_copy "$@" || true
+}
+
+bryan_sync_src_clone() {
+  local src="${1:-${BRYAN_SRC_DIR}}"
+  local repo="${2:-${BRYAN_DEFAULT_REPO}}"
+  local ref="${3:-${BRYAN_DEFAULT_REF}}"
+  [[ -d "${src}/.git" ]] || return 1
+  git -C "${src}" remote set-url origin "${repo}" >/dev/null 2>&1 || git -C "${src}" remote add origin "${repo}" || true
+  git -C "${src}" fetch --depth 1 origin "${ref}"
+  git -C "${src}" checkout -q -B "${ref}" "origin/${ref}" 2>/dev/null || git -C "${src}" reset --hard "origin/${ref}"
+}
+
+bryan_write_controlpanel_bin() {
+  local app="$1"
+  mkdir -p "${BRYAN_BIN_DIR}" || return 0
+  local dest="${BRYAN_BIN_DIR}/controlpanel"
+  local tmp
+  tmp="$(mktemp "${dest}.XXXXXX" 2>/dev/null || mktemp)"
+  cat > "${tmp}" <<EOF
+#!/usr/bin/env bash
+exec python3 ${app@Q} "\$@"
+EOF
+  chmod 755 "${tmp}"
+  mv "${tmp}" "${dest}" || true
+}
+
+bryan_repair_runtime() {
+  local repo_root="${1:-${BRYAN_SRC_DIR}}"
+  local lib_dir="${2:-${BRYAN_LIB_DIR}}"
+  mkdir -p "${lib_dir}" "${BRYAN_BIN_DIR}" || true
+  local name
+  for name in terminal_miner_control.py gpu_tuning_helper.py vast_idle_host_miner.py vast_prl_host_miner_launcher.sh; do
+    if [[ -f "${repo_root}/scripts/${name}" ]]; then
+      bryan_try_copy "${repo_root}/scripts/${name}" "${lib_dir}/${name}"
+    fi
+  done
+  if [[ -f "${repo_root}/scripts/bryan-gpu-setup" ]]; then
+    bryan_try_copy "${repo_root}/scripts/bryan-gpu-setup" "${BRYAN_BIN_DIR}/bryan-gpu-setup" 755
+  fi
+  if [[ -f "${repo_root}/scripts/controlpanel" ]]; then
+    bryan_try_copy "${repo_root}/scripts/controlpanel" "${BRYAN_BIN_DIR}/controlpanel" 755
+  fi
+  if [[ -f "${lib_dir}/terminal_miner_control.py" ]]; then
+    bryan_write_controlpanel_bin "${lib_dir}/terminal_miner_control.py"
+  fi
+  BRYAN_LIB_DIR="${lib_dir}"
+  bryan_ensure_controlpanel_alias
+  if [[ -x "${BRYAN_BIN_DIR}/controlpanel" ]]; then
+    bryan_log "controlpanel installed at ${BRYAN_BIN_DIR}/controlpanel"
+  fi
+  if [[ -f "${lib_dir}/terminal_miner_control.py" ]]; then
+    bryan_log "controlpanel app: python3 ${lib_dir}/terminal_miner_control.py"
+  fi
+}
+
 bryan_ensure_controlpanel_alias() {
   local app="${BRYAN_LIB_DIR}/terminal_miner_control.py"
   local alias_line
@@ -337,15 +394,7 @@ PY
 }
 
 bryan_install_cli_from_tree() {
-  local repo_root="$1"
-  mkdir -p "${BRYAN_BIN_DIR}"
-  if [[ -f "${repo_root}/scripts/bryan-gpu-setup" ]]; then
-    bryan_atomic_copy "${repo_root}/scripts/bryan-gpu-setup" "${BRYAN_BIN_DIR}/bryan-gpu-setup" 755
-  fi
-  if [[ -f "${repo_root}/scripts/controlpanel" ]]; then
-    bryan_atomic_copy "${repo_root}/scripts/controlpanel" "${BRYAN_BIN_DIR}/controlpanel" 755
-  fi
-  bryan_ensure_controlpanel_alias
+  bryan_repair_runtime "${1:-${BRYAN_SRC_DIR}}" "${BRYAN_LIB_DIR}"
 }
 
 bryan_systemctl() {

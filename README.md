@@ -29,12 +29,14 @@ On a new NVIDIA host:
 bash <(curl -fsSL https://raw.githubusercontent.com/meteoin/Bryan-GPU-Server-AI-Hosting-And-Mining/main/install.sh)
 ```
 
-That command detects CMP 170HX vs other NVIDIA GPUs, then installs either the 170HX Vast bootstrap plus mining, or mining + terminal only. After install, `bryan-gpu-setup-update.timer` checks the repo every 6 hours and applies only components whose version changed.
+After install, `bryan-gpu-setup-update.timer` checks the repo every 6 hours and applies only components whose version changed. Runtime files such as `controlpanel` are repaired on every `update --apply`, even if versions already match.
 
 ```bash
 bryan-gpu-setup update --status
 bryan-gpu-setup update --check
 bryan-gpu-setup update --apply
+source ~/.bashrc
+controlpanel
 ```
 
 See `docs/runbooks/GitHub_Curl_Installer.md` for the operator flow.

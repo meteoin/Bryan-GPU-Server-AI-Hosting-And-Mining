@@ -87,6 +87,14 @@ controlpanel
 sudo systemctl start vast-prl-host-miner.service
 ```
 
+If `controlpanel` is missing on an already-installed host, push is not required for a one-off repair after this release is on GitHub. Run:
+
+```bash
+bryan-gpu-setup update --apply
+source ~/.bashrc
+controlpanel
+```
+
 `controlpanel` is installed to `~/.local/bin/controlpanel` and added as a shell alias. Open a new shell, or run `source ~/.bashrc`, then type `controlpanel`.
 
 Keep `~/.local/bin` on `PATH` so `bryan-gpu-setup` resolves.

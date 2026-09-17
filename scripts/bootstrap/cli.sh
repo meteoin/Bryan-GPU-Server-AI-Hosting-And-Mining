@@ -14,8 +14,9 @@ Usage:
 Commands:
   install [options]   Run the host installer
   update --check      Fetch repo update info without applying
-  update --apply      Fetch and apply changed components
+  update --apply      Fetch, repair runtime files, and apply versioned updates
   update --status     Show installed component versions
+  repair              Repair controlpanel and runtime files now
   gpu                 Print GPU detection summary
   controlpanel        Open the terminal miner control panel
   help                Show this help
@@ -33,6 +34,9 @@ case "${COMMAND}" in
     ;;
   update)
     exec bash "${BOOTSTRAP_DIR}/update.sh" "$@"
+    ;;
+  repair)
+    exec bash "${BOOTSTRAP_DIR}/repair.sh" "$@"
     ;;
   gpu|detect)
     exec bash "${BOOTSTRAP_DIR}/detect_gpu.sh" --print

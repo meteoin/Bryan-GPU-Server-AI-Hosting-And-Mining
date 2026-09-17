@@ -63,13 +63,12 @@ fetch_remote_manifest() {
   mkdir -p "${SRC_DIR}"
   if [[ -d "${SRC_DIR}/.git" ]]; then
     bryan_log "Fetching ${REPO} ${REF}"
-    git -C "${SRC_DIR}" remote set-url origin "${REPO}" >/dev/null 2>&1 || git -C "${SRC_DIR}" remote add origin "${REPO}"
-    if git -C "${SRC_DIR}" fetch --depth 1 origin "${REF}"; then
+    if bryan_sync_src_clone "${SRC_DIR}" "${REPO}" "${REF}"; then
+      if [[ -f "${SRC_DIR}/manifest.json" ]]; then
+        cp "${SRC_DIR}/manifest.json" "${REMOTE_MANIFEST}"
+        return 0
+      fi
       if git -C "${SRC_DIR}" show "origin/${REF}:manifest.json" > "${REMOTE_MANIFEST}" 2>/dev/null; then
-        if ! git -C "${SRC_DIR}" merge --ff-only "origin/${REF}" >/dev/null 2>&1; then
-          bryan_log "Fast-forward failed (likely a force-push); resetting clone to origin/${REF}"
-          git -C "${SRC_DIR}" checkout -q -B "${REF}" "origin/${REF}" || git -C "${SRC_DIR}" reset --hard "origin/${REF}"
-        fi
         return 0
       fi
     fi
@@ -184,6 +183,13 @@ copy_files_from_src() {
         mv "${tmp}" "${dest}"
         bryan_log "Updated ${dest}"
         ;;
+      controlpanel|bryan-gpu-setup)
+        dest="${BRYAN_BIN_DIR}/${base}"
+        mkdir -p "$(dirname "${dest}")" || true
+        chmod 755 "${tmp}"
+        mv "${tmp}" "${dest}" || true
+        bryan_log "Updated ${dest}"
+        ;;
       *)
         rm -f "${tmp}"
         ;;
@@ -285,6 +291,10 @@ path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
 PY
 }
 
+ensure_controlpanel_present() {
+  bryan_repair_runtime "${SRC_DIR}" "${LIB_DIR}"
+}
+
 if [[ "${MODE}" == "status" ]]; then
   print_status
   exit 0
@@ -297,13 +307,18 @@ RELEASE="$(bryan_python -c 'import json,sys; print(json.loads(sys.argv[1]).get("
 
 if [[ "${PLAN_COUNT}" -eq 0 ]]; then
   bryan_log "No component updates found for profile ${PROFILE}"
+  if [[ "${MODE}" == "apply" ]]; then
+    ensure_controlpanel_present
+  fi
   if [[ "${MODE}" == "check" ]]; then
     print_status
   fi
-  # still retry a deferred restart if the host is now idle
   PENDING="$(bryan_json_get "${BRYAN_INSTALLED_FILE}" pending_restart)"
   if [[ "${MODE}" == "apply" && "${PENDING}" == *"${BRYAN_MINER_SERVICE}"* ]]; then
     maybe_restart_miner || true
+  fi
+  if [[ "${MODE}" == "apply" ]]; then
+    print_status
   fi
   exit 0
 fi
@@ -351,18 +366,6 @@ for item in "${UPDATE_ITEMS[@]}"; do
   fi
 done
 
-mkdir -p "${LIB_DIR}"
-if [[ ! -f "${LIB_DIR}/terminal_miner_control.py" ]]; then
-  if git -C "${SRC_DIR}" show "origin/${REF}:scripts/terminal_miner_control.py" > "${LIB_DIR}/terminal_miner_control.py" 2>/dev/null; then
-    bryan_log "Installed terminal app to ${LIB_DIR}/terminal_miner_control.py"
-  fi
-fi
-bryan_install_cli_from_tree "${SRC_DIR}"
-if [[ -f "${LIB_DIR}/terminal_miner_control.py" ]]; then
-  bryan_log "controlpanel: python3 ${LIB_DIR}/terminal_miner_control.py"
-else
-  bryan_log "WARNING: terminal_miner_control.py is still missing from ${LIB_DIR}"
-fi
-
+ensure_controlpanel_present
 bryan_log "Update pass complete"
 print_status
